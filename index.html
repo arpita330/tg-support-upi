@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Galaxy UPI Payment PRO</title>
+<title>Galaxy UPI Payment</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
@@ -20,7 +20,7 @@ body{
   overflow:hidden;
 }
 
-/* Background Video */
+/* Background */
 .video-bg{
   position:fixed;
   inset:0;
@@ -41,7 +41,6 @@ body{
   animation:glow 8s ease infinite;
   box-shadow:0 0 60px rgba(0,245,255,.9);
   color:#00252c;
-  transition:.3s;
 }
 
 @keyframes glow{
@@ -54,14 +53,9 @@ body{
 .amount{font-size:18px;margin-bottom:10px}
 .amount span{font-weight:800}
 .payee{font-size:14px;opacity:.8;margin-bottom:20px}
+.secure{margin-top:16px;font-size:13px;opacity:.7}
 
-.secure{
-  margin-top:16px;
-  font-size:13px;
-  opacity:.7;
-}
-
-/* Loading Overlay */
+/* Loader */
 .loader{
   position:fixed;
   inset:0;
@@ -89,7 +83,7 @@ body{
   to{transform:rotate(360deg)}
 }
 
-/* Success Screen */
+/* Success */
 .success{
   position:fixed;
   inset:0;
@@ -104,6 +98,7 @@ body{
 }
 </style>
 </head>
+
 <body>
 
 <video class="video-bg" loop muted autoplay playsinline>
@@ -123,9 +118,9 @@ body{
 </div>
 
 <div class="success" id="success">
-  ✅ Payment Initiated  
+  ✅ Opening UPI App...
   <br><br>
-  Redirecting...
+  Please complete your payment
 </div>
 
 <script>
@@ -146,13 +141,14 @@ const amount = data.am || params.get("am") || "0";
 const payee = data.pn || params.get("pn") || "";
 const pa = data.pa || params.get("pa") || "";
 const tr = data.tr || params.get("tr") || "TX"+Date.now();
-const tn = data.tn || params.get("tn") || "UPI Payment";
+const tn = data.tn || params.get("tn") || "Telegram Payment";
 
+/* Display Data */
 document.getElementById("amt").innerText = amount;
 document.getElementById("payee").innerText =
   payee ? "Paying to: " + payee : "";
 
-/* Main Button */
+/* Telegram Main Button */
 tg.MainButton.setText("🚀 PAY ₹" + amount);
 tg.MainButton.show();
 tg.MainButton.enable();
@@ -167,6 +163,7 @@ function startPayment(){
   tg.MainButton.disable();
 
   setTimeout(()=>{
+
     const upi =
       "upi://pay?pa="+encodeURIComponent(pa)+
       "&pn="+encodeURIComponent(payee)+
@@ -175,6 +172,7 @@ function startPayment(){
       "&tr="+encodeURIComponent(tr)+
       "&tn="+encodeURIComponent(tn);
 
+    /* Send Data Back To Bot */
     tg.sendData(JSON.stringify({
       status:"initiated",
       amount:amount,
@@ -187,10 +185,18 @@ function startPayment(){
     haptic.notificationOccurred("success");
 
     setTimeout(()=>{
-      window.location.href = upi;
+
+      /* ✅ FIX FOR ERR_UNKNOWN_URL_SCHEME */
+      if (tg.platform === "android") {
+          tg.openLink(upi);
+      } else {
+          alert("⚠ Please open this payment in Telegram Android app.");
+      }
+
       setTimeout(()=>{
         tg.close();
       },4000);
+
     },1500);
 
   },1500);
