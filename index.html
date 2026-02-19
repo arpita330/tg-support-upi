@@ -20,16 +20,6 @@ body{
   overflow:hidden;
 }
 
-/* Background */
-.video-bg{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  z-index:-1;
-}
-
 /* Card */
 .card{
   width:360px;
@@ -59,7 +49,7 @@ body{
 .loader{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.85);
+  background:rgba(0,0,0,.9);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -83,7 +73,6 @@ body{
   to{transform:rotate(360deg)}
 }
 
-/* Success */
 .success{
   position:fixed;
   inset:0;
@@ -100,10 +89,6 @@ body{
 </head>
 
 <body>
-
-<video class="video-bg" loop muted autoplay playsinline>
-<source src="https://raw.githubusercontent.com/arpita330/transaction_check_available/main/night%20sky~2.mp4" type="video/mp4">
-</video>
 
 <div class="card">
   <div class="title">💳 Pay via UPI</div>
@@ -129,26 +114,21 @@ tg.expand();
 
 const haptic = tg.HapticFeedback;
 
-/* Get Data */
-let data = {};
-try{
-  data = JSON.parse(tg.initDataUnsafe.start_param || "{}");
-}catch(e){}
-
+/* Get URL Params */
 const params = new URLSearchParams(window.location.search);
 
-const amount = data.am || params.get("am") || "0";
-const payee = data.pn || params.get("pn") || "";
-const pa = data.pa || params.get("pa") || "";
-const tr = data.tr || params.get("tr") || "TX"+Date.now();
-const tn = data.tn || params.get("tn") || "Telegram Payment";
+const amount = params.get("am") || "0";
+const payee = params.get("pn") || "";
+const pa = params.get("pa") || "";
+const tr = params.get("tr") || "TX" + Date.now();
+const tn = params.get("tn") || "Telegram Payment";
 
-/* Display Data */
+/* Display */
 document.getElementById("amt").innerText = amount;
 document.getElementById("payee").innerText =
   payee ? "Paying to: " + payee : "";
 
-/* Telegram Main Button */
+/* Main Button */
 tg.MainButton.setText("🚀 PAY ₹" + amount);
 tg.MainButton.show();
 tg.MainButton.enable();
@@ -164,13 +144,15 @@ function startPayment(){
 
   setTimeout(()=>{
 
-    const upi =
-      "upi://pay?pa="+encodeURIComponent(pa)+
+    /* 🔥 ANDROID INTENT LINK (SHOWS UPI APP CHOOSER) */
+    const upiIntent =
+      "intent://pay?pa="+encodeURIComponent(pa)+
       "&pn="+encodeURIComponent(payee)+
       "&am="+encodeURIComponent(amount)+
       "&cu=INR"+
       "&tr="+encodeURIComponent(tr)+
-      "&tn="+encodeURIComponent(tn);
+      "&tn="+encodeURIComponent(tn)+
+      "#Intent;scheme=upi;end";
 
     /* Send Data Back To Bot */
     tg.sendData(JSON.stringify({
@@ -186,9 +168,8 @@ function startPayment(){
 
     setTimeout(()=>{
 
-      /* ✅ FIX FOR ERR_UNKNOWN_URL_SCHEME */
       if (tg.platform === "android") {
-          tg.openLink(upi);
+          tg.openLink(upiIntent);
       } else {
           alert("⚠ Please open this payment in Telegram Android app.");
       }
@@ -197,9 +178,9 @@ function startPayment(){
         tg.close();
       },4000);
 
-    },1500);
+    },1200);
 
-  },1500);
+  },1200);
 }
 </script>
 
