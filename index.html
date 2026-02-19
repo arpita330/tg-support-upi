@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galaxy UPI Payment PRO</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:system-ui,-apple-system,sans-serif;
+  background:#000;
+  overflow:hidden;
+}
+
+/* Background Video */
+.video-bg{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-1;
+}
+
+/* Card */
+.card{
+  width:360px;
+  padding:28px 24px;
+  border-radius:20px;
+  text-align:center;
+  background:linear-gradient(135deg,#00f5ff,#00bcd4,#00ffff);
+  background-size:300% 300%;
+  animation:glow 8s ease infinite;
+  box-shadow:0 0 60px rgba(0,245,255,.9);
+  color:#00252c;
+  transition:.3s;
+}
+
+@keyframes glow{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+.title{font-size:20px;font-weight:700;margin-bottom:12px}
+.amount{font-size:18px;margin-bottom:10px}
+.amount span{font-weight:800}
+.payee{font-size:14px;opacity:.8;margin-bottom:20px}
+
+.secure{
+  margin-top:16px;
+  font-size:13px;
+  opacity:.7;
+}
+
+/* Loading Overlay */
+.loader{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  color:#fff;
+  font-size:16px;
+  display:none;
+}
+
+.spinner{
+  width:50px;
+  height:50px;
+  border:5px solid #00f5ff;
+  border-top:5px solid transparent;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin-bottom:15px;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+/* Success Screen */
+.success{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  color:#00ffcc;
+  font-size:20px;
+  display:none;
+}
+</style>
+</head>
+<body>
+
+<video class="video-bg" loop muted autoplay playsinline>
+<source src="https://raw.githubusercontent.com/arpita330/transaction_check_available/main/night%20sky~2.mp4" type="video/mp4">
+</video>
+
+<div class="card">
+  <div class="title">💳 Pay via UPI</div>
+  <div class="amount">Amount: ₹<span id="amt">0</span></div>
+  <div class="payee" id="payee"></div>
+  <div class="secure">Secure UPI • Telegram Protected</div>
+</div>
+
+<div class="loader" id="loader">
+  <div class="spinner"></div>
+  Processing Payment...
+</div>
+
+<div class="success" id="success">
+  ✅ Payment Initiated  
+  <br><br>
+  Redirecting...
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+const haptic = tg.HapticFeedback;
+
+/* Get Data */
+let data = {};
+try{
+  data = JSON.parse(tg.initDataUnsafe.start_param || "{}");
+}catch(e){}
+
+const params = new URLSearchParams(window.location.search);
+
+const amount = data.am || params.get("am") || "0";
+const payee = data.pn || params.get("pn") || "";
+const pa = data.pa || params.get("pa") || "";
+const tr = data.tr || params.get("tr") || "TX"+Date.now();
+const tn = data.tn || params.get("tn") || "UPI Payment";
+
+document.getElementById("amt").innerText = amount;
+document.getElementById("payee").innerText =
+  payee ? "Paying to: " + payee : "";
+
+/* Main Button */
+tg.MainButton.setText("🚀 PAY ₹" + amount);
+tg.MainButton.show();
+tg.MainButton.enable();
+
+tg.MainButton.onClick(startPayment);
+
+function startPayment(){
+
+  haptic.impactOccurred("medium");
+
+  document.getElementById("loader").style.display="flex";
+  tg.MainButton.disable();
+
+  setTimeout(()=>{
+    const upi =
+      "upi://pay?pa="+encodeURIComponent(pa)+
+      "&pn="+encodeURIComponent(payee)+
+      "&am="+encodeURIComponent(amount)+
+      "&cu=INR"+
+      "&tr="+encodeURIComponent(tr)+
+      "&tn="+encodeURIComponent(tn);
+
+    tg.sendData(JSON.stringify({
+      status:"initiated",
+      amount:amount,
+      transaction:tr
+    }));
+
+    document.getElementById("loader").style.display="none";
+    document.getElementById("success").style.display="flex";
+
+    haptic.notificationOccurred("success");
+
+    setTimeout(()=>{
+      window.location.href = upi;
+      setTimeout(()=>{
+        tg.close();
+      },4000);
+    },1500);
+
+  },1500);
+}
+</script>
+
+</body>
+</html>
